@@ -1,0 +1,49 @@
+@import '../common/base.css';
+
+/* Thème Discoveradio : nuit violette, accents violet / rose / rouge */
+:root {
+    --brand-primary: #a855f7;
+    --brand-primary-hover: #ff4fa3;
+    --brand-midtone: #1c1431;
+    --brand-darktone: #a99dc8;
+    --brand-default-bg: #120d1f;
+    --brand-default-fg: #e6ddf7;
+    --brand-notice: #ff4fa3;
+    --brand-warning: #ff8a5c;
+    --brand-error: #ff3d5a;
+    --brand-input-border: #2b2147;
+    --brand-input-fg: #f5f0ff;
+    --brand-input-bg: #08060f;
+    --comp-workspace-before-bg: #a855f7;
+    --comp-bg-kiwi-workspace--disconnected-after-bg: #ff3d5a;
+    --comp-header-bg: #120d1f;
+    --comp-header-name-fg: #f5f0ff;
+    --comp-header-option-active-fg: #ffffff;
+    --comp-header-option-active-bg: #a855f7;
+    --comp-statebrowser-fg: #a99dc8;
+    --comp-statebrowser-bg: #0d0919;
+    --comp-statebrowser-bg-networkname: #1c1431;
+    --comp-statebrowser-channel-active-bg: #ffffff0d;
+    --comp-statebrowser-channel-active-fg: #f5f0ff;
+    --comp-usermenu-open-bg: #08060f;
+    --comp-statebrowser-network-border: #2b2147;
+    --comp-sidebar-bg: #0d0919;
+    --comp-sidebar-fg: #a99dc8;
+    --comp-scroller-bg: #1c1431;
+    --comp-scroller-fg: #4a3a78;
+    --comp-aboutbuffer-bg: rgba(255, 255, 255, 0.03);
+    --comp-aboutbuffer-header-bg: #a855f7;
+    --brand-link-normal: #ff4fa3;
+    --brand-link--hover: #ffa0cf;
+    --brand-shadow: rgba(0, 0, 0, 0.3);
+    --comp-border: #2b2147;
+}
+.kiwi-wrap { --kiwi-nickcolour-saturation: 70; --kiwi-nickcolour-lightness: 65; }
+.kiwi-wrap select option { background-color: var(--brand-default-bg); color: var(--brand-default-fg); }
+.kiwi-header { border-bottom-color: #2b2147; }
+.kiwi-statebrowser-channels .kiwi-statebrowser-channel { color: #e6ddf7; }
+.u-tabbed-view-tabs { background: #1c1431; border-bottom-color: #ffffff1a; }
+.u-tabbed-view-tabs .u-tabbed-view-tab { border-bottom-color: #ffffff1a; }
+.kiwi-customserver { background-color: var(--brand-default-bg); }
+button.u-button.u-button-primary { background: linear-gradient(135deg, #a855f7, #ff4fa3); color: #fff; border: 0; }
+.kiwi-messagelist-item:hover { background: #ffffff08; }

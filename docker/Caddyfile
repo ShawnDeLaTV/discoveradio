@@ -1,0 +1,33 @@
+{$SITE_ADDRESS} {
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options SAMEORIGIN
+		-Server
+	}
+
+	# Audio : servi tel quel (pas de compression), Range requests gérées par l'app
+	handle /media/* {
+		reverse_proxy app:3000
+	}
+
+	# Chat : le client Kiwi parle en WebSocket directement au serveur IRC Ergo
+	handle /irc* {
+		reverse_proxy ergo:8097
+	}
+
+	# La config de Kiwi est générée par l'app (hôte, TLS, pseudo = utilisateur connecté)
+	handle /chat/static/config.json {
+		rewrite * /kiwi-config.json
+		reverse_proxy app:3000
+	}
+	redir /chat /chat/ 308
+	handle_path /chat/* {
+		reverse_proxy kiwi:80
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy app:3000
+	}
+}

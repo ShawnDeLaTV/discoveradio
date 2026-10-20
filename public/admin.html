@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modération · Discoveradio</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>
+    (function () {
+      var t = 'dark';
+      try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
+      document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/" aria-label="Retour à l'antenne">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="3.2" fill="currentColor"/><path d="M10 10a8.5 8.5 0 0 0 0 12M22 10a8.5 8.5 0 0 1 0 12M5.5 5.5a15 15 0 0 0 0 21M26.5 5.5a15 15 0 0 1 0 21" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span class="display">Discoveradio</span>
+    </a>
+    <a class="btn" href="/">Retour à l'antenne</a>
+  </header>
+
+  <main class="admin">
+    <h1>Modération</h1>
+
+    <section aria-labelledby="h-pending" style="display:grid;gap:12px">
+      <h2 id="h-pending" class="subhead" style="margin:0">À valider <span id="count" class="pill-n" hidden></span></h2>
+      <p class="muted">Écoute le morceau, puis valide-le pour l'ajouter à la file ou refuse-le. Le proposant est prévenu dans son navigateur.</p>
+      <div id="pending" style="display:grid;gap:14px" aria-live="polite"><p class="muted">Chargement…</p></div>
+    </section>
+
+    <section aria-labelledby="h-live" style="display:grid;gap:12px">
+      <h2 id="h-live" class="subhead" style="margin:0">À l'antenne</h2>
+      <div class="actions">
+        <span id="current" class="muted">…</span>
+        <div class="end"><button id="skip" class="btn" type="button">Passer au morceau suivant</button></div>
+      </div>
+      <ol id="library" class="tracklist"></ol>
+    </section>
+  </main>
+
+  <div id="toasts" role="status" aria-live="polite"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+    const toast = m => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; $('#toasts').append(e); setTimeout(() => e.remove(), 4000); };
+    const denied = msg => `<div class="card muted">${msg}</div>`;
+
+    function pendingCard(t) {
+      let host = '';
+      try { host = t.link && !t.linkIsSearch ? `<a class="ext" href="${esc(t.link)}" target="_blank" rel="noopener">${esc(new URL(t.link).hostname.replace(/^www\./, ''))}</a>` : ''; } catch {}
+      return `
+        <article class="card" data-id="${t.id}">
+          <div><h2>${esc(t.title)}</h2><p class="muted">${esc(t.artist)}, proposé par ${esc(t.by || 'inconnu')}, ${fmt(t.duration)}</p></div>
+          <audio controls preload="none" src="${esc(t.url)}"></audio>
+          <div class="actions">
+            ${host}
+            <div class="end">
+              <button class="btn" data-act="reject" type="button">Refuser</button>
+              <button class="btn btn-primary" data-act="approve" type="button">Valider</button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    async function loadPending() {
+      try {
+        const r = await fetch('/api/admin/pending');
+        if (!r.ok) { $('#pending').innerHTML = denied('Accès réservé aux administrateurs. <a href="/" style="color:var(--accent)">Retour à l\'antenne</a>'); $('#library').innerHTML = ''; return false; }
+        const items = await r.json();
+        const c = $('#count'); c.hidden = !items.length; c.textContent = items.length;
+        $('#pending').innerHTML = items.length ? items.map(pendingCard).join('') : denied('Rien à valider pour le moment.');
+        return true;
+      } catch { $('#pending').innerHTML = denied('Erreur réseau.'); return false; }
+    }
+    async function loadLive() {
+      const r = await fetch('/api/admin/live');
+      if (!r.ok) return;
+      const { current, tracks } = await r.json();
+      const cur = tracks.find(t => t.id === current);
+      $('#current').textContent = cur ? `En ce moment : ${cur.title}, ${cur.artist}` : 'Aucun morceau en cours.';
+      $('#library').innerHTML = tracks.length ? tracks.map(t => `
+        <li class="track plain" data-id="${t.id}">
+          <div class="meta"><strong>${esc(t.title)}${t.id === current ? ' (en cours)' : ''}</strong><span>${esc(t.artist)}, ${t.plays} passage${t.plays > 1 ? 's' : ''}, ${t.likes} like${t.likes > 1 ? 's' : ''}</span></div>
+          <span class="dur">${fmt(t.duration)}</span>
+          <button class="btn" data-act="remove" type="button">Retirer</button>
+        </li>`).join('') : '<li class="empty">Aucun morceau validé. Valide une proposition ou dépose des fichiers dans ./library.</li>';
+    }
+    const reload = async () => { if (await loadPending()) loadLive(); };
+
+    document.addEventListener('click', async e => {
+      const b = e.target.closest('button[data-act]');
+      if (!b) return;
+      const el = b.closest('[data-id]');
+      if (b.dataset.act === 'remove' && !confirm('Retirer ce morceau de la radio ?')) return;
+      b.disabled = true;
+      const r = await fetch(`/api/admin/tracks/${encodeURIComponent(el.dataset.id)}/${b.dataset.act}`, { method: 'POST' });
+      if (!r.ok) { b.disabled = false; return toast('Action impossible, réessaie.'); }
+      reload();
+    });
+    $('#skip').onclick = async () => { $('#skip').disabled = true; await fetch('/api/admin/skip', { method: 'POST' }); $('#skip').disabled = false; toast('Morceau suivant lancé.'); };
+    document.addEventListener('play', e => document.querySelectorAll('audio').forEach(a => { if (a !== e.target) a.pause(); }), true);
+
+    const sock = io();   // sans « listener » : les admins ne gonflent pas le compteur d'auditeurs
+    sock.on('pending-changed', reload);
+    sock.on('state', loadLive);
+    reload();
+  </script>
+</body>
+</html>

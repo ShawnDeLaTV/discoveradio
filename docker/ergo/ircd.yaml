@@ -1,0 +1,99 @@
+# Serveur IRC interne : uniquement un listener WebSocket, joignable via Caddy (/irc).
+network:
+    name: Discoveradio
+
+server:
+    name: irc.discoveradio.local
+    listeners:
+        "0.0.0.0:8097":
+            websocket: true
+    casemapping: "precis"
+    enforce-utf8: true
+    lookup-hostnames: false
+    forward-confirm-hostnames: false
+    check-ident: false
+    max-sendq: "96k"
+    # Caddy transmet l'IP réelle via X-Forwarded-For (réseaux privés Docker uniquement)
+    proxy-allowed-from:
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+    ip-limits:
+        count: true
+        max-concurrent-connections: 16
+        throttle: true
+        window: 10m
+        max-connections-per-window: 64
+        cidr-len-ipv4: 32
+        cidr-len-ipv6: 64
+        exempted:
+            - "localhost"
+    # Les IP des auditeurs ne sont jamais visibles dans le chat
+    ip-cloaking:
+        enabled: true
+        enabled-for-always-on: true
+        netname: "discoveradio"
+        cidr-len-ipv4: 32
+        cidr-len-ipv6: 64
+        num-bits: 64
+
+accounts:
+    authentication-enabled: false
+    registration:
+        enabled: false
+    require-sasl:
+        enabled: false
+    nick-reservation:
+        enabled: false
+    multiclient:
+        enabled: false
+
+channels:
+    default-modes: +ntC
+    max-channels-per-client: 10
+    operator-only-creation: false
+    registration:
+        enabled: false
+
+datastore:
+    path: /ircd/ircd.db
+    autoupgrade: true
+
+limits:
+    nicklen: 32
+    identlen: 20
+    channellen: 64
+    awaylen: 390
+    kicklen: 390
+    topiclen: 390
+    monitor-entries: 100
+    whowas-entries: 100
+    chan-list-modes: 60
+    registration-messages: 1024
+    multiline:
+        max-bytes: 4096
+        max-lines: 100
+
+# Anti-spam : 2 messages par seconde en rafale de 5
+fakelag:
+    enabled: true
+    window: 1s
+    burst-limit: 5
+    messages-per-window: 2
+    cooldown: 2s
+
+# Les nouveaux arrivants voient les derniers messages du salon
+history:
+    enabled: true
+    channel-length: 2048
+    client-length: 256
+    autoresize-window: 3d
+    autoreplay-on-join: 30
+    chathistory-maxmessages: 100
+    znc-maxmessages: 2048
+
+logging:
+    -
+        method: stderr
+        type: "* -userinput -useroutput"
+        level: info
